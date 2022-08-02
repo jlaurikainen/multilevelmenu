@@ -1,0 +1,11 @@
+.menu-item:hover {
+  background-color: lightsteelblue;
+}
+
+.menu-item button:focus {
+  outline: none;
+}
+
+.menu-item:focus-within {
+  background-color: lightsteelblue;
+}
