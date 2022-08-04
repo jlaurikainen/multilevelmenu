@@ -1,28 +1,54 @@
 import {
   forwardRef,
+  HTMLAttributes,
   KeyboardEvent,
+  MouseEvent,
   Ref,
   useImperativeHandle,
   useRef,
   useState,
 } from "react";
+import styled from "styled-components";
 import { useDropdownContext } from "./DropdownContext";
 import { DropdownMenu } from "./DropdownMenu";
 import { DropdownMenuItem } from "./types";
 
-type DropdownItemProps = {
+type DropdownItemProps = HTMLAttributes<HTMLDivElement> & {
   item: DropdownMenuItem;
 };
 
 export const DropdownItem = forwardRef(
-  ({ item }: DropdownItemProps, ref: Ref<HTMLButtonElement | null>) => {
-    const [menuOpen, setMenuOpen] = useState(false);
-    const { closeDropdown } = useDropdownContext();
-    const { label, subMenuItems, ...buttonProps } = item;
+  (
+    { item, ...rest }: DropdownItemProps,
+    ref: Ref<HTMLButtonElement | null>
+  ) => {
+    const [open, setOpen] = useState(false);
+    const menuItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
     const buttonRef = useRef<HTMLButtonElement>(null);
-    const hasSubMenu = !!subMenuItems;
 
     useImperativeHandle(ref, () => buttonRef.current);
+
+    const { closeMainMenu } = useDropdownContext();
+    const { label, menuItems, ...buttonProps } = item;
+    const hasSubMenu = menuItems !== undefined;
+
+    function closeSubMenu() {
+      setOpen(false);
+    }
+
+    function openSubMenu() {
+      setOpen(true);
+    }
+
+    function closeCurrentMenu() {
+      closeSubMenu();
+      buttonRef.current?.focus();
+    }
+
+    function onClick(event: MouseEvent<HTMLButtonElement>) {
+      buttonProps.onClick?.(event);
+      closeMainMenu();
+    }
 
     function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
       switch (event.key) {
@@ -30,56 +56,73 @@ export const DropdownItem = forwardRef(
           event.preventDefault();
           event.stopPropagation();
 
-          hasSubMenu && setMenuOpen(true);
+          if (!hasSubMenu) return;
+
+          openSubMenu();
+          setTimeout(() => menuItemRefs.current[0]?.focus(), 0);
+
           break;
         }
       }
     }
 
     return (
-      <div
-        className="menu-item"
+      <MenuItem
+        {...rest}
         onKeyDown={onKeyDown}
-        onMouseEnter={() => setMenuOpen(true)}
-        onMouseLeave={() => setMenuOpen(false)}
+        onMouseEnter={openSubMenu}
+        onMouseLeave={closeSubMenu}
       >
-        <button
+        <MenuButton
           {...buttonProps}
-          onClick={(event) => {
-            setMenuOpen(true);
-            buttonProps.onClick?.(event);
-            !hasSubMenu && closeDropdown();
-          }}
+          onClick={onClick}
           ref={buttonRef}
           role="menuitem"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            padding: 8,
-            width: "100%",
-            border: 0,
-            backgroundColor: "transparent",
-            whiteSpace: "nowrap",
-          }}
         >
           {label}
-          {hasSubMenu && <span style={{ marginLeft: "auto" }}>{">"}</span>}
-        </button>
+          {hasSubMenu && <SubMenuIndicator />}
+        </MenuButton>
 
         {hasSubMenu && (
           <DropdownMenu
-            closeSubMenu={() => {
-              setMenuOpen(false);
-              buttonRef.current?.focus();
-            }}
+            closeSubMenu={closeCurrentMenu}
             isSubMenu
-            menuItems={subMenuItems}
-            menuIsOpen={menuOpen}
+            menuItemRefs={menuItemRefs}
+            menuItems={menuItems}
+            menuIsOpen={open}
             parent={buttonRef}
           />
         )}
-      </div>
+      </MenuItem>
     );
   }
 );
+
+const MenuItem = styled.div({
+  ":hover, :focus-within": {
+    backgroundColor: "lightsteelblue",
+  },
+});
+
+const MenuButton = styled.button({
+  display: "flex",
+  alignItems: "center",
+  gap: 16,
+  padding: 8,
+  width: "100%",
+  border: 0,
+  backgroundColor: "transparent",
+  whiteSpace: "nowrap",
+
+  ":focus": {
+    outline: "none",
+  },
+});
+
+const SubMenuIndicator = styled.span({
+  marginLeft: "auto",
+
+  "::after": {
+    content: "'>'",
+  },
+});

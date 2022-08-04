@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 
 type DropdownContextProps = {
-  closeDropdown: () => void;
+  closeMainMenu: () => void;
 };
 
 export const DropdownContext = createContext<DropdownContextProps | null>(null);

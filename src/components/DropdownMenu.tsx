@@ -5,16 +5,16 @@ import {
   Ref,
   RefObject,
   useImperativeHandle,
-  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { usePopper } from "react-popper";
+import styled from "styled-components";
 import { useDropdownContext } from "./DropdownContext";
 import { DropdownItem } from "./DropdownItem";
 import { DropdownMenuItem } from "./types";
-import { focusedChildIndex } from "./utils";
+import { findFocusIndex } from "./utils";
 
 type DropdownMenuProps = HTMLAttributes<HTMLElement> & {
   closeSubMenu?: () => void;
@@ -40,11 +40,11 @@ export const DropdownMenu = forwardRef(
   ) => {
     const [menuRef, setMenuRef] = useState<HTMLDivElement | null>(null);
     const menuItemsRefs = useRef<(HTMLButtonElement | null)[]>([]);
-    const { closeDropdown } = useDropdownContext();
 
-    useImperativeHandle(ref, () => menuRef);
     useImperativeHandle(itemRefs, () => menuItemsRefs.current);
+    useImperativeHandle(ref, () => menuRef);
 
+    const { closeMainMenu } = useDropdownContext();
     const { attributes, styles } = usePopper(parent.current, menuRef, {
       placement: isSubMenu ? "right-start" : "bottom-start",
       modifiers: [
@@ -63,11 +63,9 @@ export const DropdownMenu = forwardRef(
           event.preventDefault();
           event.stopPropagation();
 
-          const activeChildIndex = focusedChildIndex(menuItemsRefs.current);
-
-          menuItemsRefs.current[
-            (activeChildIndex + 1) % menuItemsRefs.current.length
-          ]?.focus();
+          const focusIndex = findFocusIndex(menuItemsRefs.current);
+          const newIndex = (focusIndex + 1) % menuItemsRefs.current.length;
+          menuItemsRefs.current[newIndex]?.focus();
 
           break;
         }
@@ -75,20 +73,22 @@ export const DropdownMenu = forwardRef(
           event.preventDefault();
           event.stopPropagation();
 
-          isSubMenu && closeSubMenu?.();
+          if (isSubMenu) {
+            closeSubMenu?.();
+          }
+
           break;
         }
         case "ArrowUp": {
           event.preventDefault();
           event.stopPropagation();
 
-          const activeChildIndex = focusedChildIndex(menuItemsRefs.current);
-
-          menuItemsRefs.current[
-            activeChildIndex === 0
+          const activeIndex = findFocusIndex(menuItemsRefs.current);
+          const newIndex =
+            activeIndex === 0
               ? menuItemsRefs.current.length - 1
-              : activeChildIndex - 1
-          ]?.focus();
+              : activeIndex - 1;
+          menuItemsRefs.current[newIndex]?.focus();
 
           break;
         }
@@ -96,7 +96,8 @@ export const DropdownMenu = forwardRef(
           event.preventDefault();
           event.stopPropagation();
 
-          isSubMenu ? closeSubMenu?.() : closeDropdown();
+          isSubMenu ? closeSubMenu?.() : closeMainMenu();
+
           break;
         }
         case "Tab": {
@@ -106,15 +107,9 @@ export const DropdownMenu = forwardRef(
       }
     }
 
-    useLayoutEffect(() => {
-      if (isSubMenu && menuIsOpen && menuItemsRefs.current) {
-        menuItemsRefs.current[0]?.focus();
-      }
-    }, [isSubMenu, menuIsOpen, menuItemsRefs]);
-
     function renderMenu() {
       return (
-        <div
+        <Menu
           {...rest}
           {...attributes.popper}
           onKeyDown={onKeyDown}
@@ -122,12 +117,7 @@ export const DropdownMenu = forwardRef(
           role="menu"
           style={{
             ...styles.popper,
-            margin: 0,
-            padding: 0,
             minWidth: isSubMenu ? "auto" : parent.current?.offsetWidth,
-            backgroundColor: "white",
-            boxShadow: "0 3px 6px rgba(0,0,0,0.3)",
-            listStyleType: "none",
           }}
         >
           {menuItems?.map((item, i) => (
@@ -137,7 +127,7 @@ export const DropdownMenu = forwardRef(
               ref={(instance) => (menuItemsRefs.current[i] = instance)}
             />
           ))}
-        </div>
+        </Menu>
       );
     }
 
@@ -150,3 +140,10 @@ export const DropdownMenu = forwardRef(
     return renderMenu();
   }
 );
+
+const Menu = styled.div({
+  margin: 0,
+  padding: 0,
+  backgroundColor: "white",
+  boxShadow: "0 3px 6px rgba(0,0,0,0.3)",
+});

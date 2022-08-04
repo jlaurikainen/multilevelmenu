@@ -16,64 +16,70 @@ type DropdownProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export default function Dropdown({ label, menuItems, ...rest }: DropdownProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [menuRef, setMenuRef] = useState<HTMLDivElement | null>(null);
   const menuItemsRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLButtonElement>(null);
   const id = useId();
 
-  useOnClickOutside([buttonRef, { current: menuRef }], () =>
-    setMenuOpen(false)
-  );
+  useOnClickOutside([dropdownRef, { current: menuRef }], closeDropdown);
+
+  function closeDropdown() {
+    setOpen(false);
+  }
+
+  function closeMainMenu() {
+    closeDropdown();
+    dropdownRef.current?.focus();
+  }
 
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     switch (event.key) {
       case "ArrowDown": {
-        if (!menuOpen) {
-          event.preventDefault();
-          setMenuOpen(true);
-          break;
-        }
+        event.preventDefault();
 
-        if (menuOpen && menuItemsRefs.current) {
+        !open ? setOpen(true) : menuItemsRefs.current[0]?.focus();
+
+        break;
+      }
+
+      case "ArrowUp": {
+        event.preventDefault();
+
+        const lastIndex = menuItemsRefs.current.length - 1;
+        !open ? setOpen(true) : menuItemsRefs.current[lastIndex]?.focus();
+
+        break;
+      }
+
+      case "Escape":
+        closeDropdown();
+        break;
+
+      case "Tab":
+        if (!event.shiftKey && open) {
           event.preventDefault();
           menuItemsRefs.current[0]?.focus();
         }
-        break;
-      }
-      case "ArrowUp": {
-        if (!menuOpen) {
-          event.preventDefault();
-          setMenuOpen(true);
-          break;
-        }
 
-        if (menuOpen && menuRef) {
-          event.preventDefault();
-          menuItemsRefs.current[menuItemsRefs.current.length - 1]?.focus();
-        }
         break;
-      }
     }
   }
 
+  function toggleDropdown() {
+    setOpen(!open);
+  }
+
   return (
-    <DropdownContext.Provider
-      value={{
-        closeDropdown: () => {
-          setMenuOpen(false);
-          buttonRef.current?.focus();
-        },
-      }}
-    >
+    <DropdownContext.Provider value={{ closeMainMenu }}>
       <button
         {...rest}
-        aria-controls={`dropdown-${id}-menu`}
-        aria-expanded={menuOpen}
+        aria-controls={open ? `dropdown-${id}-menu` : ""}
+        aria-expanded={open}
         id={`dropdown-${id}`}
-        onClick={() => setMenuOpen(!menuOpen)}
+        onClick={toggleDropdown}
         onKeyDown={onKeyDown}
-        ref={buttonRef}
+        ref={dropdownRef}
         role="switch"
         type="button"
       >
@@ -85,8 +91,8 @@ export default function Dropdown({ label, menuItems, ...rest }: DropdownProps) {
         id={`dropdown-${id}-menu`}
         menuItemRefs={menuItemsRefs}
         menuItems={menuItems}
-        menuIsOpen={menuOpen}
-        parent={buttonRef}
+        menuIsOpen={open}
+        parent={dropdownRef}
         ref={setMenuRef}
       />
     </DropdownContext.Provider>

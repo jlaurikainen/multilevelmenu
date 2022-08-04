@@ -5,7 +5,7 @@ import { DropdownMenuItem } from "./components/types";
 const menuItems: DropdownMenuItem[] = [
   {
     label: "Item 1",
-    subMenuItems: [
+    menuItems: [
       {
         label: "Item 1_1",
         onClick: () => console.log("Item 1_1 clicked"),
@@ -22,10 +22,10 @@ const menuItems: DropdownMenuItem[] = [
   },
   {
     label: "Item 3",
-    subMenuItems: [
+    menuItems: [
       {
         label: "Item 1_1",
-        subMenuItems: [
+        menuItems: [
           {
             label: "Item 1_1_1",
             onClick: () => console.log("Item 1_1_1 clicked"),
