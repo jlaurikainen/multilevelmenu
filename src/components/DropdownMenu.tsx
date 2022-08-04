@@ -63,13 +63,12 @@ export const DropdownMenu = forwardRef(
           event.preventDefault();
           event.stopPropagation();
 
-          if (menuRef) {
-            const activeChildIndex = focusedChildIndex(menuItemsRefs.current);
+          const activeChildIndex = focusedChildIndex(menuItemsRefs.current);
 
-            menuItemsRefs.current[
-              (activeChildIndex + 1) % menuItemsRefs.current.length
-            ]?.focus();
-          }
+          menuItemsRefs.current[
+            (activeChildIndex + 1) % menuItemsRefs.current.length
+          ]?.focus();
+
           break;
         }
         case "ArrowLeft": {
@@ -83,15 +82,14 @@ export const DropdownMenu = forwardRef(
           event.preventDefault();
           event.stopPropagation();
 
-          if (menuRef) {
-            const activeChildIndex = focusedChildIndex(menuItemsRefs.current);
+          const activeChildIndex = focusedChildIndex(menuItemsRefs.current);
 
-            menuItemsRefs.current[
-              activeChildIndex === 0
-                ? menuItemsRefs.current.length - 1
-                : activeChildIndex - 1
-            ]?.focus();
-          }
+          menuItemsRefs.current[
+            activeChildIndex === 0
+              ? menuItemsRefs.current.length - 1
+              : activeChildIndex - 1
+          ]?.focus();
+
           break;
         }
         case "Escape": {
